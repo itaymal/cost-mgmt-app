@@ -31,7 +31,15 @@ class GCPProxyService {
   // Test project access
   async testProjectAccess() {
     try {
-      const data = await this.makeRequest(`projects/${this.projectId}`);
+      const url = `${this.proxyUrl}/api/gcp/projects/${this.projectId}`;
+      console.log('🌐 Making request to:', url);
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
       return { success: true, data };
     } catch (error) {
       return { success: false, error: error.message };
@@ -41,7 +49,15 @@ class GCPProxyService {
   // Test billing access
   async testBillingAccess() {
     try {
-      const data = await this.makeRequest('billingAccounts');
+      const url = `${this.proxyUrl}/api/gcp/billingAccounts`;
+      console.log('🌐 Making request to:', url);
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
       return { success: true, data };
     } catch (error) {
       return { success: false, error: error.message };
@@ -51,7 +67,15 @@ class GCPProxyService {
   // Test compute access
   async testComputeAccess() {
     try {
-      const data = await this.makeRequest(`projects/${this.projectId}/zones`);
+      const url = `${this.proxyUrl}/api/gcp/projects/${this.projectId}/zones`;
+      console.log('🌐 Making request to:', url);
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
       return { success: true, data };
     } catch (error) {
       return { success: false, error: error.message };

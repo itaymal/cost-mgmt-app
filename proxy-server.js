@@ -27,48 +27,63 @@ const GCP_APIS = {
   recommender: 'https://recommender.googleapis.com/v1'
 };
 
-// Generic proxy endpoint
-app.get('/api/gcp/*', async (req, res) => {
+// Specific endpoints to avoid wildcard issues
+app.get('/api/gcp/projects/:projectId', async (req, res) => {
   try {
-    const path = req.params[0]; // Everything after /api/gcp/
+    const { projectId } = req.params;
     const apiKey = process.env.REACT_APP_GCP_API_KEY;
     
     if (!apiKey) {
       return res.status(400).json({ error: 'GCP API key not configured' });
     }
 
-    // Determine which GCP API to use based on the path
-    let baseUrl;
-    if (path.startsWith('billing')) {
-      baseUrl = GCP_APIS.billing;
-    } else if (path.startsWith('projects') && !path.includes('compute')) {
-      baseUrl = GCP_APIS.resourceManager;
-    } else if (path.includes('compute') || path.includes('zones') || path.includes('instances')) {
-      baseUrl = GCP_APIS.compute;
-    } else if (path.includes('storage') || path.includes('buckets')) {
-      baseUrl = GCP_APIS.storage;
-    } else if (path.includes('sql') || path.includes('instances')) {
-      baseUrl = GCP_APIS.sql;
-    } else if (path.includes('recommender')) {
-      baseUrl = GCP_APIS.recommender;
-    } else {
-      return res.status(400).json({ error: 'Unknown GCP API endpoint' });
-    }
-
-    const targetUrl = `${baseUrl}/${path}?key=${apiKey}`;
-    
+    const targetUrl = `https://cloudresourcemanager.googleapis.com/v1/projects/${projectId}?key=${apiKey}`;
     console.log(`🌐 Proxying request to: ${targetUrl}`);
 
-    const response = await fetch(targetUrl, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await fetch(targetUrl);
+    const data = await response.json();
+    res.json(data);
 
-    if (!response.ok) {
-      throw new Error(`GCP API error: ${response.status} ${response.statusText}`);
+  } catch (error) {
+    console.error('Proxy error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/gcp/billingAccounts', async (req, res) => {
+  try {
+    const apiKey = process.env.REACT_APP_GCP_API_KEY;
+    
+    if (!apiKey) {
+      return res.status(400).json({ error: 'GCP API key not configured' });
     }
 
+    const targetUrl = `https://cloudbilling.googleapis.com/v1/billingAccounts?key=${apiKey}`;
+    console.log(`🌐 Proxying request to: ${targetUrl}`);
+
+    const response = await fetch(targetUrl);
+    const data = await response.json();
+    res.json(data);
+
+  } catch (error) {
+    console.error('Proxy error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/gcp/projects/:projectId/zones', async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const apiKey = process.env.REACT_APP_GCP_API_KEY;
+    
+    if (!apiKey) {
+      return res.status(400).json({ error: 'GCP API key not configured' });
+    }
+
+    const targetUrl = `https://compute.googleapis.com/v1/projects/${projectId}/zones?key=${apiKey}`;
+    console.log(`🌐 Proxying request to: ${targetUrl}`);
+
+    const response = await fetch(targetUrl);
     const data = await response.json();
     res.json(data);
 
