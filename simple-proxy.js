@@ -28,7 +28,10 @@ try {
       scopes: [
         'https://www.googleapis.com/auth/cloud-billing.readonly',
         'https://www.googleapis.com/auth/cloud-platform.read-only',
-        'https://www.googleapis.com/auth/compute.readonly'
+        'https://www.googleapis.com/auth/compute.readonly',
+        'https://www.googleapis.com/auth/sqlservice.readonly',
+        'https://www.googleapis.com/auth/devstorage.read_only',
+        'https://www.googleapis.com/auth/recommender.readonly'
       ]
     });
     console.log('✅ Service account authentication initialized');
