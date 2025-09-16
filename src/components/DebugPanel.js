@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Bug, CheckCircle, XCircle, AlertTriangle, Info } from 'lucide-react';
+import { Bug, CheckCircle, XCircle, AlertTriangle, Info, Play } from 'lucide-react';
+import gcpTestService from '../services/gcpTest';
 
 const DebugPanel = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [debugInfo, setDebugInfo] = useState({});
+  const [testResults, setTestResults] = useState(null);
+  const [isTesting, setIsTesting] = useState(false);
 
   useEffect(() => {
     const info = {
@@ -21,6 +24,21 @@ const DebugPanel = () => {
     };
     setDebugInfo(info);
   }, []);
+
+  const runGCPTests = async () => {
+    setIsTesting(true);
+    setTestResults(null);
+    
+    try {
+      const results = await gcpTestService.runAllTests();
+      setTestResults(results);
+    } catch (error) {
+      console.error('Test error:', error);
+      setTestResults({ error: error.message });
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   const getStatusIcon = (value) => {
     if (value === 'Set' || value === 'production') {
@@ -138,6 +156,43 @@ const DebugPanel = () => {
                 </p>
               </div>
             </div>
+          </div>
+
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium text-blue-900">GCP API Tests</h4>
+              <button
+                onClick={runGCPTests}
+                disabled={isTesting}
+                className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+              >
+                <Play className="w-3 h-3" />
+                <span>{isTesting ? 'Testing...' : 'Test APIs'}</span>
+              </button>
+            </div>
+            
+            {testResults && (
+              <div className="space-y-2 text-sm">
+                {testResults.error ? (
+                  <div className="text-red-600">❌ Test Error: {testResults.error}</div>
+                ) : (
+                  <>
+                    <div className={`flex items-center space-x-2 ${testResults.project?.success ? 'text-green-600' : 'text-red-600'}`}>
+                      <span>{testResults.project?.success ? '✅' : '❌'}</span>
+                      <span>Project Access</span>
+                    </div>
+                    <div className={`flex items-center space-x-2 ${testResults.billing?.success ? 'text-green-600' : 'text-red-600'}`}>
+                      <span>{testResults.billing?.success ? '✅' : '❌'}</span>
+                      <span>Billing Access</span>
+                    </div>
+                    <div className={`flex items-center space-x-2 ${testResults.compute?.success ? 'text-green-600' : 'text-red-600'}`}>
+                      <span>{testResults.compute?.success ? '✅' : '❌'}</span>
+                      <span>Compute Access</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
