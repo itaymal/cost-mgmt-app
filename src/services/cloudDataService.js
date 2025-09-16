@@ -41,11 +41,23 @@ class CloudDataService {
     const { startDate, endDate, projectId, filters = {} } = options;
     
     // Check if we should use mock data
-    const useMockData = process.env.REACT_APP_ENABLE_MOCK_DATA === 'true' || 
-                       !this.providers[provider]?.hasValidAuth?.();
+    const enableMockData = process.env.REACT_APP_ENABLE_MOCK_DATA === 'true';
+    const hasValidAuth = this.providers[provider]?.hasValidAuth?.();
+    
+    console.log(`🔍 Debug - Provider: ${provider}`);
+    console.log(`🔍 Debug - REACT_APP_ENABLE_MOCK_DATA: ${process.env.REACT_APP_ENABLE_MOCK_DATA}`);
+    console.log(`🔍 Debug - enableMockData: ${enableMockData}`);
+    console.log(`🔍 Debug - hasValidAuth: ${hasValidAuth}`);
+    console.log(`🔍 Debug - Project ID: ${process.env.REACT_APP_GCP_PROJECT_ID ? 'Set' : 'Not Set'}`);
+    console.log(`🔍 Debug - API Key: ${process.env.REACT_APP_GCP_API_KEY ? 'Set' : 'Not Set'}`);
+    console.log(`🔍 Debug - Service Account: ${process.env.REACT_APP_GCP_SERVICE_ACCOUNT_KEY ? 'Set' : 'Not Set'}`);
+    
+    const useMockData = enableMockData || !hasValidAuth;
     
     if (useMockData) {
-      console.log(`Using mock data for ${provider} (REACT_APP_ENABLE_MOCK_DATA=${process.env.REACT_APP_ENABLE_MOCK_DATA})`);
+      console.log(`⚠️ Using mock data for ${provider}`);
+      console.log(`   - REACT_APP_ENABLE_MOCK_DATA: ${enableMockData}`);
+      console.log(`   - hasValidAuth: ${hasValidAuth}`);
       return this.getMockCostData(provider);
     }
     

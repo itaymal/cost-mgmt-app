@@ -40,7 +40,16 @@ class GCPService {
 
   // Check if we have proper authentication
   hasValidAuth() {
-    return !!(this.apiKey || this.serviceAccountKey);
+    const hasApiKey = !!this.apiKey;
+    const hasServiceAccount = !!this.serviceAccountKey;
+    const hasProjectId = !!this.projectId;
+    
+    console.log(`🔍 GCP Auth Debug:`);
+    console.log(`   - API Key: ${hasApiKey}`);
+    console.log(`   - Service Account: ${hasServiceAccount}`);
+    console.log(`   - Project ID: ${hasProjectId}`);
+    
+    return (hasApiKey || hasServiceAccount) && hasProjectId;
   }
 
   // Fetch billing account information

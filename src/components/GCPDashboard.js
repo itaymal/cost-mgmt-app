@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import FilterPanel from './FilterPanel';
 import DrillDownPanel from './DrillDownPanel';
+import EnvTest from './EnvTest';
 import cloudDataService from '../services/cloudDataService';
 import { 
   LineChart, 
@@ -278,6 +279,17 @@ const GCPDashboard = () => {
           {realTimeData ? 'Live data from GCP APIs' : 'Detailed cost analysis and optimization insights for GCP'}
         </p>
       </motion.div>
+
+      {/* Environment Test - Remove this after debugging */}
+      {process.env.NODE_ENV === 'development' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6"
+        >
+          <EnvTest />
+        </motion.div>
+      )}
 
       {/* Filter Panel */}
       <FilterPanel
