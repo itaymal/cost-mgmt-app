@@ -21,20 +21,35 @@ app.use(express.json());
 let auth;
 try {
   const serviceAccountKey = process.env.REACT_APP_GCP_SERVICE_ACCOUNT_KEY;
+  
+  console.log('🔍 Debug - Service Account Key Check:');
+  console.log(`   - Key exists: ${!!serviceAccountKey}`);
+  console.log(`   - Key length: ${serviceAccountKey ? serviceAccountKey.length : 0}`);
+  console.log(`   - Key starts with: ${serviceAccountKey ? serviceAccountKey.substring(0, 50) + '...' : 'N/A'}`);
+  
   if (serviceAccountKey) {
-    const credentials = JSON.parse(serviceAccountKey);
-    auth = new GoogleAuth({
-      credentials: credentials,
-      scopes: [
-        'https://www.googleapis.com/auth/cloud-billing.readonly',
-        'https://www.googleapis.com/auth/cloud-platform.read-only',
-        'https://www.googleapis.com/auth/compute.readonly',
-        'https://www.googleapis.com/auth/sqlservice.readonly',
-        'https://www.googleapis.com/auth/devstorage.read_only',
-        'https://www.googleapis.com/auth/recommender.readonly'
-      ]
-    });
-    console.log('✅ Service account authentication initialized');
+    try {
+      const credentials = JSON.parse(serviceAccountKey);
+      console.log('✅ Service account JSON parsed successfully');
+      console.log(`   - Project ID: ${credentials.project_id}`);
+      console.log(`   - Client Email: ${credentials.client_email}`);
+      
+      auth = new GoogleAuth({
+        credentials: credentials,
+        scopes: [
+          'https://www.googleapis.com/auth/cloud-billing.readonly',
+          'https://www.googleapis.com/auth/cloud-platform.read-only',
+          'https://www.googleapis.com/auth/compute.readonly',
+          'https://www.googleapis.com/auth/sqlservice.readonly',
+          'https://www.googleapis.com/auth/devstorage.read_only',
+          'https://www.googleapis.com/auth/recommender.readonly'
+        ]
+      });
+      console.log('✅ Service account authentication initialized');
+    } catch (parseError) {
+      console.error('❌ Failed to parse service account JSON:', parseError.message);
+      console.log('   - Raw key (first 100 chars):', serviceAccountKey.substring(0, 100));
+    }
   } else {
     console.log('⚠️ No service account key found, using API key fallback');
   }
