@@ -7,7 +7,7 @@
 
 const express = require('express');
 const cors = require('cors');
-const { GoogleAuth } = require('google-auth-library');
+const { JWT } = require('google-auth-library');
 require('dotenv').config();
 
 const app = express();
@@ -22,11 +22,6 @@ let auth;
 try {
   const serviceAccountKey = process.env.REACT_APP_GCP_SERVICE_ACCOUNT_KEY;
   
-  console.log('🔍 Debug - Service Account Key Check:');
-  console.log(`   - Key exists: ${!!serviceAccountKey}`);
-  console.log(`   - Key length: ${serviceAccountKey ? serviceAccountKey.length : 0}`);
-  console.log(`   - Key starts with: ${serviceAccountKey ? serviceAccountKey.substring(0, 50) + '...' : 'N/A'}`);
-  
   if (serviceAccountKey) {
     try {
       const credentials = JSON.parse(serviceAccountKey);
@@ -34,8 +29,9 @@ try {
       console.log(`   - Project ID: ${credentials.project_id}`);
       console.log(`   - Client Email: ${credentials.client_email}`);
       
-      auth = new GoogleAuth({
-        credentials: credentials,
+      auth = new JWT({
+        email: credentials.client_email,
+        key: credentials.private_key,
         scopes: [
           'https://www.googleapis.com/auth/cloud-billing.readonly',
           'https://www.googleapis.com/auth/cloud-platform.read-only',
@@ -45,10 +41,9 @@ try {
           'https://www.googleapis.com/auth/recommender.readonly'
         ]
       });
-      console.log('✅ Service account authentication initialized');
+      console.log('✅ Service account authentication initialized with JWT');
     } catch (parseError) {
       console.error('❌ Failed to parse service account JSON:', parseError.message);
-      console.log('   - Raw key (first 100 chars):', serviceAccountKey.substring(0, 100));
     }
   } else {
     console.log('⚠️ No service account key found, using API key fallback');
@@ -63,6 +58,22 @@ app.get('/health', (req, res) => {
     status: 'ok', 
     timestamp: new Date().toISOString(),
     message: 'Simple GCP Proxy Server is running'
+  });
+});
+
+// Debug endpoint to check environment variables
+app.get('/debug', (req, res) => {
+  res.json({
+    status: 'debug',
+    timestamp: new Date().toISOString(),
+    environment: {
+      REACT_APP_GCP_PROJECT_ID: process.env.REACT_APP_GCP_PROJECT_ID ? 'Set' : 'Not Set',
+      REACT_APP_GCP_API_KEY: process.env.REACT_APP_GCP_API_KEY ? 'Set' : 'Not Set',
+      REACT_APP_GCP_SERVICE_ACCOUNT_KEY: process.env.REACT_APP_GCP_SERVICE_ACCOUNT_KEY ? 'Set' : 'Not Set',
+      REACT_APP_PROXY_URL: process.env.REACT_APP_PROXY_URL ? 'Set' : 'Not Set'
+    },
+    serviceAccountKeyLength: process.env.REACT_APP_GCP_SERVICE_ACCOUNT_KEY ? process.env.REACT_APP_GCP_SERVICE_ACCOUNT_KEY.length : 0,
+    authInitialized: !!auth
   });
 });
 
