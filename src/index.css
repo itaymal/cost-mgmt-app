@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+  
+  body {
+    @apply bg-gray-50 font-inter text-gray-900;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-sm border border-white/20;
+  }
+  
+  .gradient-bg {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  
+  .gcp-gradient {
+    background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+  }
+  
+  .azure-gradient {
+    background: linear-gradient(135deg, #0078d4 0%, #8764b8 100%);
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+  
+  .metric-card {
+    @apply bg-white rounded-xl shadow-lg border border-gray-100 p-6 card-hover;
+  }
+  
+  .chart-container {
+    @apply bg-white rounded-xl shadow-lg border border-gray-100 p-6;
+  }
+}
