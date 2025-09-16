@@ -4,7 +4,9 @@ import gcpService from './gcpService';
 class CloudDataService {
   constructor() {
     this.useMockData = process.env.REACT_APP_ENABLE_MOCK_DATA === 'true';
-    console.log('🔧 CloudDataService initialized with mock data:', this.useMockData);
+    console.log('🔧 CloudDataService initialized:');
+    console.log('  - REACT_APP_ENABLE_MOCK_DATA:', process.env.REACT_APP_ENABLE_MOCK_DATA);
+    console.log('  - useMockData:', this.useMockData);
   }
 
   async getProviderData(provider, dataType, params = {}) {
@@ -49,17 +51,15 @@ class CloudDataService {
   async getCostData(params) {
     try {
       const billingAccounts = await gcpService.getBillingAccounts();
-      // For now, return mock cost data structure
+      console.log('✅ Real billing accounts fetched:', billingAccounts);
+      
+      // Return real data structure with billing accounts
       return {
-        totalCost: 58000,
+        totalCost: 0, // Will be calculated from real billing data
         currency: 'USD',
-        services: [
-          { name: 'Compute Engine', cost: 35000 },
-          { name: 'Cloud Storage', cost: 10000 },
-          { name: 'Cloud SQL', cost: 7000 },
-          { name: 'Cloud Functions', cost: 6000 }
-        ],
-        billingAccounts: billingAccounts
+        services: [], // Will be populated from real billing data
+        billingAccounts: billingAccounts,
+        isRealData: true
       };
     } catch (error) {
       console.error('Error fetching cost data:', error);
@@ -70,6 +70,7 @@ class CloudDataService {
   async getProjects() {
     try {
       const project = await gcpService.getProject();
+      console.log('✅ Real project fetched:', project);
       return [project];
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -84,6 +85,8 @@ class CloudDataService {
         gcpService.getStorage().catch(() => []),
         gcpService.getSQL().catch(() => ({ items: [] }))
       ]);
+      
+      console.log('✅ Real resources fetched:', { instances, storage, sql });
 
       // Return a flat array of all resources
       const allResources = [];
@@ -138,6 +141,7 @@ class CloudDataService {
   async getRecommendations(params) {
     try {
       const recommendations = await gcpService.getRecommendations();
+      console.log('✅ Real recommendations fetched:', recommendations);
       return recommendations || [];
     } catch (error) {
       console.error('Error fetching recommendations:', error);
