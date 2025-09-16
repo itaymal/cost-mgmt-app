@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-// Google Cloud clients
+// Google Cloud clients - using default credentials
 const { CloudBillingClient } = require('@google-cloud/billing');
 const { ProjectsClient } = require('@google-cloud/resource-manager');
 const { InstancesClient } = require('@google-cloud/compute');
@@ -16,15 +16,15 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
-// Initialize clients
-const billingClient = new CloudBillingClient();
-const projectsClient = new ProjectsClient();
-const computeClient = new InstancesClient();
-const storageClient = new Storage();
-// const sqlClient = new SqlAdminServiceClient();
-const recommenderClient = new RecommenderClient();
-
 const projectId = process.env.REACT_APP_GCP_PROJECT_ID;
+
+// Initialize clients with explicit project
+const billingClient = new CloudBillingClient({ projectId });
+const projectsClient = new ProjectsClient({ projectId });
+const computeClient = new InstancesClient({ projectId });
+const storageClient = new Storage({ projectId });
+// const sqlClient = new SqlAdminServiceClient({ projectId });
+const recommenderClient = new RecommenderClient({ projectId });
 
 // Health check
 app.get('/health', (req, res) => {
