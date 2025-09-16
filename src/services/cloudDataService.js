@@ -1,466 +1,179 @@
-// Generic Cloud Data Service
-// This service provides a unified interface for different cloud providers
-
-import GCPService from './gcpService';
+// Simple Cloud Data Service using the backend server
+import gcpService from './gcpService';
 
 class CloudDataService {
   constructor() {
-    this.providers = {
-      gcp: GCPService,
-      azure: null, // Will be implemented later
-      aws: null    // Future implementation
-    };
+    this.useMockData = process.env.REACT_APP_ENABLE_MOCK_DATA === 'true';
+    console.log('🔧 CloudDataService initialized with mock data:', this.useMockData);
   }
 
-  // Get data for a specific provider
-  async getProviderData(provider, dataType, options = {}) {
-    const service = this.providers[provider];
+  async getProviderData(provider, dataType, params = {}) {
+    console.log(`📊 Fetching ${dataType} for ${provider}`, params);
     
-    if (!service) {
-      throw new Error(`Provider ${provider} not supported`);
+    if (this.useMockData) {
+      console.log('🎭 Using mock data');
+      return this.getMockData(provider, dataType, params);
     }
 
+    try {
+      switch (provider.toLowerCase()) {
+        case 'gcp':
+          return await this.getGCPData(dataType, params);
+        case 'azure':
+          return await this.getAzureData(dataType, params);
+        default:
+          throw new Error(`Unsupported provider: ${provider}`);
+      }
+    } catch (error) {
+      console.error(`❌ Error fetching ${dataType} for ${provider}:`, error);
+      console.log('🔄 Falling back to mock data');
+      return this.getMockData(provider, dataType, params);
+    }
+  }
+
+  async getGCPData(dataType, params) {
     switch (dataType) {
       case 'costs':
-        return await this.getCostData(provider, options);
+        return await this.getCostData(params);
       case 'projects':
-        return await this.getProjects(provider, options);
+        return await this.getProjects();
       case 'resources':
-        return await this.getResources(provider, options);
+        return await this.getResources(params);
       case 'recommendations':
-        return await this.getRecommendations(provider, options);
-      case 'utilization':
-        return await this.getUtilization(provider, options);
+        return await this.getRecommendations(params);
       default:
-        throw new Error(`Data type ${dataType} not supported`);
+        throw new Error(`Unsupported data type: ${dataType}`);
     }
   }
 
-  // Get cost data for a provider
-  async getCostData(provider, options) {
-    const { startDate, endDate, projectId, filters = {} } = options;
-    
-    // Check if we should use mock data
-    const enableMockData = process.env.REACT_APP_ENABLE_MOCK_DATA === 'true';
-    const hasValidAuth = this.providers[provider]?.hasValidAuth?.();
-    
-    console.log(`🔍 Debug - Provider: ${provider}`);
-    console.log(`🔍 Debug - REACT_APP_ENABLE_MOCK_DATA: ${process.env.REACT_APP_ENABLE_MOCK_DATA}`);
-    console.log(`🔍 Debug - enableMockData: ${enableMockData}`);
-    console.log(`🔍 Debug - hasValidAuth: ${hasValidAuth}`);
-    console.log(`🔍 Debug - Project ID: ${process.env.REACT_APP_GCP_PROJECT_ID ? 'Set' : 'Not Set'}`);
-    console.log(`🔍 Debug - API Key: ${process.env.REACT_APP_GCP_API_KEY ? 'Set' : 'Not Set'}`);
-    console.log(`🔍 Debug - Service Account: ${process.env.REACT_APP_GCP_SERVICE_ACCOUNT_KEY ? 'Set' : 'Not Set'}`);
-    
-    const useMockData = enableMockData || !hasValidAuth;
-    
-    if (useMockData) {
-      console.log(`⚠️ Using mock data for ${provider}`);
-      console.log(`   - REACT_APP_ENABLE_MOCK_DATA: ${enableMockData}`);
-      console.log(`   - hasValidAuth: ${hasValidAuth}`);
-      return this.getMockCostData(provider);
-    }
-    
+  async getCostData(params) {
     try {
-      let data;
-      
-      switch (provider) {
-        case 'gcp':
-          data = await this.providers.gcp.getCostData(startDate, endDate, projectId);
-          break;
-        case 'azure':
-          // Azure implementation will go here
-          data = this.getMockAzureCostData();
-          break;
-        default:
-          throw new Error(`Cost data not available for ${provider}`);
-      }
-
-      return this.transformCostData(data, provider);
-    } catch (error) {
-      console.error(`Error fetching cost data for ${provider}:`, error);
-      console.log('Falling back to mock data');
-      // Return mock data for development
-      return this.getMockCostData(provider);
-    }
-  }
-
-  // Get projects for a provider
-  async getProjects(provider, options = {}) {
-    try {
-      let data;
-      
-      switch (provider) {
-        case 'gcp':
-          data = await this.providers.gcp.getProjects();
-          break;
-        case 'azure':
-          data = this.getMockAzureProjects();
-          break;
-        default:
-          throw new Error(`Projects not available for ${provider}`);
-      }
-
-      return this.transformProjectsData(data, provider);
-    } catch (error) {
-      console.error(`Error fetching projects for ${provider}:`, error);
-      return this.getMockProjectsData(provider);
-    }
-  }
-
-  // Get resources for a provider
-  async getResources(provider, options = {}) {
-    const { projectId, resourceType, filters = {} } = options;
-    
-    try {
-      let data;
-      
-      switch (provider) {
-        case 'gcp':
-          data = await this.getGCPResources(projectId, resourceType);
-          break;
-        case 'azure':
-          data = this.getMockAzureResources();
-          break;
-        default:
-          throw new Error(`Resources not available for ${provider}`);
-      }
-
-      return this.transformResourcesData(data, provider);
-    } catch (error) {
-      console.error(`Error fetching resources for ${provider}:`, error);
-      return this.getMockResourcesData(provider);
-    }
-  }
-
-  // Get GCP resources
-  async getGCPResources(projectId, resourceType) {
-    const gcpService = this.providers.gcp;
-    
-    switch (resourceType) {
-      case 'compute':
-        return await gcpService.getComputeInstances(projectId);
-      case 'storage':
-        return await gcpService.getStorageBuckets(projectId);
-      case 'database':
-        return await gcpService.getSQLInstances(projectId);
-      default:
-        // Get all resource types
-        const [compute, storage, database] = await Promise.all([
-          gcpService.getComputeInstances(projectId).catch(() => ({ items: [] })),
-          gcpService.getStorageBuckets(projectId).catch(() => ({ items: [] })),
-          gcpService.getSQLInstances(projectId).catch(() => ({ items: [] }))
-        ]);
-        
-        return {
-          compute: compute.items || [],
-          storage: storage.items || [],
-          database: database.items || []
-        };
-    }
-  }
-
-  // Get recommendations for a provider
-  async getRecommendations(provider, options = {}) {
-    const { projectId } = options;
-    
-    try {
-      let data;
-      
-      switch (provider) {
-        case 'gcp':
-          data = await this.providers.gcp.getCostRecommendations(projectId);
-          break;
-        case 'azure':
-          data = this.getMockAzureRecommendations();
-          break;
-        default:
-          throw new Error(`Recommendations not available for ${provider}`);
-      }
-
-      return this.transformRecommendationsData(data, provider);
-    } catch (error) {
-      console.error(`Error fetching recommendations for ${provider}:`, error);
-      return this.getMockRecommendationsData(provider);
-    }
-  }
-
-  // Get utilization data for a provider
-  async getUtilization(provider, options = {}) {
-    const { projectId, resourceId, resourceType } = options;
-    
-    try {
-      let data;
-      
-      switch (provider) {
-        case 'gcp':
-          data = await this.providers.gcp.getResourceUtilization(projectId, resourceType, resourceId);
-          break;
-        case 'azure':
-          data = this.getMockAzureUtilization();
-          break;
-        default:
-          throw new Error(`Utilization data not available for ${provider}`);
-      }
-
-      return this.transformUtilizationData(data, provider);
-    } catch (error) {
-      console.error(`Error fetching utilization for ${provider}:`, error);
-      return this.getMockUtilizationData(provider);
-    }
-  }
-
-  // Transform cost data to unified format
-  transformCostData(data, provider) {
-    const baseFormat = {
-      provider,
-      totalCost: 0,
-      currency: 'USD',
-      timeRange: {},
-      services: [],
-      projects: [],
-      trends: []
-    };
-
-    switch (provider) {
-      case 'gcp':
-        return {
-          ...baseFormat,
-          totalCost: data.totalCost || 0,
-          services: data.services || [],
-          projects: data.projects || []
-        };
-      case 'azure':
-        return {
-          ...baseFormat,
-          totalCost: data.totalCost || 0,
-          services: data.services || [],
-          projects: data.projects || []
-        };
-      default:
-        return baseFormat;
-    }
-  }
-
-  // Transform projects data to unified format
-  transformProjectsData(data, provider) {
-    return data.projects?.map(project => ({
-      id: project.projectId || project.id,
-      name: project.name || project.displayName,
-      provider,
-      status: project.lifecycleState || 'ACTIVE',
-      cost: project.cost || 0
-    })) || [];
-  }
-
-  // Transform resources data to unified format
-  transformResourcesData(data, provider) {
-    const resources = [];
-    
-    if (data.compute) {
-      resources.push(...data.compute.map(resource => ({
-        ...resource,
-        provider,
-        type: 'compute'
-      })));
-    }
-    
-    if (data.storage) {
-      resources.push(...data.storage.map(resource => ({
-        ...resource,
-        provider,
-        type: 'storage'
-      })));
-    }
-    
-    if (data.database) {
-      resources.push(...data.database.map(resource => ({
-        ...resource,
-        provider,
-        type: 'database'
-      })));
-    }
-
-    return resources;
-  }
-
-  // Transform recommendations data to unified format
-  transformRecommendationsData(data, provider) {
-    return data.recommendations?.map(rec => ({
-      ...rec,
-      provider,
-      id: rec.name || rec.id,
-      type: rec.category || 'optimization',
-      priority: this.mapPriority(rec.priority),
-      potential_savings: this.formatSavings(rec.costImpact)
-    })) || [];
-  }
-
-  // Transform utilization data to unified format
-  transformUtilizationData(data, provider) {
-    return {
-      provider,
-      metrics: data.timeSeries || [],
-      summary: data.summary || {}
-    };
-  }
-
-  // Map priority levels
-  mapPriority(priority) {
-    const priorityMap = {
-      'HIGH': 'high',
-      'MEDIUM': 'medium',
-      'LOW': 'low',
-      'CRITICAL': 'high'
-    };
-    
-    return priorityMap[priority] || 'medium';
-  }
-
-  // Format savings amount
-  formatSavings(costImpact) {
-    if (!costImpact) return '$0';
-    
-    const amount = Math.abs(costImpact.amount || costImpact);
-    return `$${amount.toLocaleString()}`;
-  }
-
-  // Mock data methods for development
-  getMockCostData(provider) {
-    const mockData = {
-      gcp: {
+      const billingAccounts = await gcpService.getBillingAccounts();
+      // For now, return mock cost data structure
+      return {
         totalCost: 58000,
+        currency: 'USD',
         services: [
           { name: 'Compute Engine', cost: 35000 },
           { name: 'Cloud Storage', cost: 10000 },
           { name: 'Cloud SQL', cost: 7000 },
           { name: 'Cloud Functions', cost: 6000 }
+        ],
+        billingAccounts: billingAccounts
+      };
+    } catch (error) {
+      console.error('Error fetching cost data:', error);
+      throw error;
+    }
+  }
+
+  async getProjects() {
+    try {
+      const project = await gcpService.getProject();
+      return [project];
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      throw error;
+    }
+  }
+
+  async getResources(params) {
+    try {
+      const [instances, storage, sql] = await Promise.all([
+        gcpService.getInstances().catch(() => ({ items: [] })),
+        gcpService.getStorage().catch(() => []),
+        gcpService.getSQL().catch(() => ({ items: [] }))
+      ]);
+
+      return {
+        compute: instances.items || [],
+        storage: storage || [],
+        database: sql.items || []
+      };
+    } catch (error) {
+      console.error('Error fetching resources:', error);
+      throw error;
+    }
+  }
+
+  async getRecommendations(params) {
+    try {
+      const recommendations = await gcpService.getRecommendations();
+      return recommendations || [];
+    } catch (error) {
+      console.error('Error fetching recommendations:', error);
+      throw error;
+    }
+  }
+
+  async getAzureData(dataType, params) {
+    // Placeholder for Azure - will be implemented later
+    return this.getMockData('azure', dataType, params);
+  }
+
+  getMockData(provider, dataType, params) {
+    const mockData = {
+      gcp: {
+        costs: {
+          totalCost: 58000,
+          currency: 'USD',
+          services: [
+            { name: 'Compute Engine', cost: 35000 },
+            { name: 'Cloud Storage', cost: 10000 },
+            { name: 'Cloud SQL', cost: 7000 },
+            { name: 'Cloud Functions', cost: 6000 }
+          ]
+        },
+        projects: [
+          { projectId: 'prod-project', name: 'Production Project' },
+          { projectId: 'dev-project', name: 'Development Project' }
+        ],
+        resources: {
+          compute: [],
+          storage: [],
+          database: []
+        },
+        recommendations: [
+          {
+            name: 'resize-instances',
+            category: 'cost_optimization',
+            priority: 'HIGH',
+            costImpact: { amount: 3200 }
+          }
         ]
       },
       azure: {
-        totalCost: 13500,
-        services: [
-          { name: 'Virtual Machines', cost: 7500 },
-          { name: 'Storage Accounts', cost: 2500 },
-          { name: 'SQL Database', cost: 2000 },
-          { name: 'App Service', cost: 1500 }
+        costs: {
+          totalCost: 13500,
+          currency: 'USD',
+          services: [
+            { name: 'Virtual Machines', cost: 7500 },
+            { name: 'Storage Accounts', cost: 2500 },
+            { name: 'SQL Database', cost: 2000 },
+            { name: 'App Service', cost: 1500 }
+          ]
+        },
+        projects: [
+          { id: 'prod-rg', name: 'Production Resource Group' },
+          { id: 'dev-rg', name: 'Development Resource Group' }
+        ],
+        resources: {
+          compute: [],
+          storage: [],
+          database: []
+        },
+        recommendations: [
+          {
+            name: 'reserved-instances',
+            category: 'cost_optimization',
+            priority: 'HIGH',
+            costImpact: { amount: 2100 }
+          }
         ]
       }
     };
 
-    return this.transformCostData(mockData[provider] || mockData.gcp, provider);
-  }
-
-  getMockProjectsData(provider) {
-    const mockData = {
-      gcp: [
-        { projectId: 'prod-project', name: 'Production Project' },
-        { projectId: 'dev-project', name: 'Development Project' },
-        { projectId: 'staging-project', name: 'Staging Project' }
-      ],
-      azure: [
-        { id: 'prod-rg', name: 'Production Resource Group' },
-        { id: 'dev-rg', name: 'Development Resource Group' },
-        { id: 'staging-rg', name: 'Staging Resource Group' }
-      ]
-    };
-
-    return this.transformProjectsData({ projects: mockData[provider] || mockData.gcp }, provider);
-  }
-
-  getMockResourcesData(provider) {
-    // Return empty array for now - will be populated by specific provider methods
-    return [];
-  }
-
-  getMockRecommendationsData(provider) {
-    const mockData = {
-      gcp: [
-        {
-          name: 'resize-instances',
-          category: 'cost_optimization',
-          priority: 'HIGH',
-          costImpact: { amount: 3200 }
-        }
-      ],
-      azure: [
-        {
-          name: 'reserved-instances',
-          category: 'cost_optimization',
-          priority: 'HIGH',
-          costImpact: { amount: 2100 }
-        }
-      ]
-    };
-
-    return this.transformRecommendationsData({ recommendations: mockData[provider] || mockData.gcp }, provider);
-  }
-
-  getMockUtilizationData(provider) {
-    return {
-      provider,
-      metrics: [],
-      summary: {
-        cpu: Math.random() * 100,
-        memory: Math.random() * 100,
-        storage: Math.random() * 100
-      }
-    };
-  }
-
-  // Azure mock data methods
-  getMockAzureCostData() {
-    return {
-      totalCost: 13500,
-      services: [
-        { name: 'Virtual Machines', cost: 7500 },
-        { name: 'Storage Accounts', cost: 2500 },
-        { name: 'SQL Database', cost: 2000 },
-        { name: 'App Service', cost: 1500 }
-      ]
-    };
-  }
-
-  getMockAzureProjects() {
-    return {
-      projects: [
-        { id: 'prod-rg', name: 'Production Resource Group' },
-        { id: 'dev-rg', name: 'Development Resource Group' },
-        { id: 'staging-rg', name: 'Staging Resource Group' }
-      ]
-    };
-  }
-
-  getMockAzureResources() {
-    return {
-      compute: [],
-      storage: [],
-      database: []
-    };
-  }
-
-  getMockAzureRecommendations() {
-    return {
-      recommendations: [
-        {
-          name: 'reserved-instances',
-          category: 'cost_optimization',
-          priority: 'HIGH',
-          costImpact: { amount: 2100 }
-        }
-      ]
-    };
-  }
-
-  getMockAzureUtilization() {
-    return {
-      timeSeries: [],
-      summary: {
-        cpu: 65,
-        memory: 70,
-        storage: 45
-      }
-    };
+    return mockData[provider]?.[dataType] || {};
   }
 }
 

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Bug, CheckCircle, XCircle, AlertTriangle, Info, Play } from 'lucide-react';
-import gcpTestService from '../services/gcpTest';
-import gcpProxyService from '../services/gcpProxyService';
+import gcpService from '../services/gcpService';
 
 const DebugPanel = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -31,23 +30,32 @@ const DebugPanel = () => {
     setTestResults(null);
     
     try {
-      // Try local proxy server first (recommended)
-      console.log('🔄 Trying local proxy server...');
-      const proxyResults = await gcpProxyService.runAllTests();
-      setTestResults({ ...proxyResults, method: 'local-proxy' });
+      console.log('🔄 Testing GCP APIs via backend server...');
+      
+      const results = {
+        project: await testAPI('Project', () => gcpService.getProject()),
+        billing: await testAPI('Billing', () => gcpService.getBillingAccounts()),
+        instances: await testAPI('Instances', () => gcpService.getInstances()),
+        storage: await testAPI('Storage', () => gcpService.getStorage()),
+        sql: await testAPI('SQL', () => gcpService.getSQL()),
+        recommendations: await testAPI('Recommendations', () => gcpService.getRecommendations())
+      };
+      
+      setTestResults({ ...results, method: 'backend-server' });
     } catch (error) {
-      console.error('Proxy test error:', error);
-      // Fallback to direct calls
-      try {
-        console.log('🔄 Proxy failed, trying direct API calls...');
-        const directResults = await gcpTestService.runAllTests();
-        setTestResults({ ...directResults, method: 'direct' });
-      } catch (directError) {
-        console.error('Direct test error:', directError);
-        setTestResults({ error: `Proxy: ${error.message}, Direct: ${directError.message}` });
-      }
+      console.error('Test error:', error);
+      setTestResults({ error: error.message });
     } finally {
       setIsTesting(false);
+    }
+  };
+
+  const testAPI = async (name, apiCall) => {
+    try {
+      const result = await apiCall();
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
     }
   };
 
@@ -199,9 +207,21 @@ const DebugPanel = () => {
                       <span>{testResults.billing?.success ? '✅' : '❌'}</span>
                       <span>Billing Access</span>
                     </div>
-                    <div className={`flex items-center space-x-2 ${testResults.compute?.success ? 'text-green-600' : 'text-red-600'}`}>
-                      <span>{testResults.compute?.success ? '✅' : '❌'}</span>
-                      <span>Compute Access</span>
+                    <div className={`flex items-center space-x-2 ${testResults.instances?.success ? 'text-green-600' : 'text-red-600'}`}>
+                      <span>{testResults.instances?.success ? '✅' : '❌'}</span>
+                      <span>Instances Access</span>
+                    </div>
+                    <div className={`flex items-center space-x-2 ${testResults.storage?.success ? 'text-green-600' : 'text-red-600'}`}>
+                      <span>{testResults.storage?.success ? '✅' : '❌'}</span>
+                      <span>Storage Access</span>
+                    </div>
+                    <div className={`flex items-center space-x-2 ${testResults.sql?.success ? 'text-green-600' : 'text-red-600'}`}>
+                      <span>{testResults.sql?.success ? '✅' : '❌'}</span>
+                      <span>SQL Access</span>
+                    </div>
+                    <div className={`flex items-center space-x-2 ${testResults.recommendations?.success ? 'text-green-600' : 'text-red-600'}`}>
+                      <span>{testResults.recommendations?.success ? '✅' : '❌'}</span>
+                      <span>Recommendations Access</span>
                     </div>
                   </>
                 )}

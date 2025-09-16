@@ -7,12 +7,17 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "server": "node server.js"
   },
   "dependencies": {
+    "@google-cloud/billing": "^4.0.0",
+    "@google-cloud/resource-manager": "^4.0.0",
+    "@google-cloud/compute": "^4.0.0",
+    "@google-cloud/storage": "^7.0.0",
+    "@google-cloud/recommender": "^3.0.0",
     "autoprefixer": "^10.4.16",
     "framer-motion": "^10.16.4",
-    "google-auth-library": "^10.3.0",
     "lucide-react": "^0.294.0",
     "postcss": "^8.4.32",
     "react": "^18.2.0",
