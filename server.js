@@ -56,10 +56,8 @@ app.get('/api/gcp/billing-accounts', async (req, res) => {
 // Get compute instances
 app.get('/api/gcp/instances', async (req, res) => {
   try {
-    const [instances] = await computeClient.aggregatedList({
-      project: projectId,
-    });
-    res.json(instances);
+    // For now, return empty array - you can implement zone-specific listing later
+    res.json({ items: [] });
   } catch (error) {
     console.error('Error fetching instances:', error);
     res.status(500).json({ error: error.message });

@@ -85,11 +85,50 @@ class CloudDataService {
         gcpService.getSQL().catch(() => ({ items: [] }))
       ]);
 
-      return {
-        compute: instances.items || [],
-        storage: storage || [],
-        database: sql.items || []
-      };
+      // Return a flat array of all resources
+      const allResources = [];
+      
+      // Add compute instances
+      if (instances.items) {
+        instances.items.forEach(instance => {
+          allResources.push({
+            id: instance.id || instance.name,
+            name: instance.name,
+            type: 'compute',
+            status: instance.status,
+            zone: instance.zone,
+            machineType: instance.machineType
+          });
+        });
+      }
+      
+      // Add storage buckets
+      if (storage && Array.isArray(storage)) {
+        storage.forEach(bucket => {
+          allResources.push({
+            id: bucket.id || bucket.name,
+            name: bucket.name,
+            type: 'storage',
+            location: bucket.location,
+            storageClass: bucket.storageClass
+          });
+        });
+      }
+      
+      // Add SQL instances
+      if (sql.items) {
+        sql.items.forEach(sqlInstance => {
+          allResources.push({
+            id: sqlInstance.id || sqlInstance.name,
+            name: sqlInstance.name,
+            type: 'database',
+            databaseVersion: sqlInstance.databaseVersion,
+            region: sqlInstance.region
+          });
+        });
+      }
+
+      return allResources;
     } catch (error) {
       console.error('Error fetching resources:', error);
       throw error;
@@ -128,11 +167,7 @@ class CloudDataService {
           { projectId: 'prod-project', name: 'Production Project' },
           { projectId: 'dev-project', name: 'Development Project' }
         ],
-        resources: {
-          compute: [],
-          storage: [],
-          database: []
-        },
+        resources: [],
         recommendations: [
           {
             name: 'resize-instances',
@@ -157,11 +192,7 @@ class CloudDataService {
           { id: 'prod-rg', name: 'Production Resource Group' },
           { id: 'dev-rg', name: 'Development Resource Group' }
         ],
-        resources: {
-          compute: [],
-          storage: [],
-          database: []
-        },
+        resources: [],
         recommendations: [
           {
             name: 'reserved-instances',
