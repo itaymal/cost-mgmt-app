@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Bug, CheckCircle, XCircle, AlertTriangle, Info, Play } from 'lucide-react';
 import gcpTestService from '../services/gcpTest';
+import gcpProxyService from '../services/gcpProxyService';
 
 const DebugPanel = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,11 +31,21 @@ const DebugPanel = () => {
     setTestResults(null);
     
     try {
-      const results = await gcpTestService.runAllTests();
-      setTestResults(results);
+      // Try local proxy server first (recommended)
+      console.log('🔄 Trying local proxy server...');
+      const proxyResults = await gcpProxyService.runAllTests();
+      setTestResults({ ...proxyResults, method: 'local-proxy' });
     } catch (error) {
-      console.error('Test error:', error);
-      setTestResults({ error: error.message });
+      console.error('Proxy test error:', error);
+      // Fallback to direct calls
+      try {
+        console.log('🔄 Proxy failed, trying direct API calls...');
+        const directResults = await gcpTestService.runAllTests();
+        setTestResults({ ...directResults, method: 'direct' });
+      } catch (directError) {
+        console.error('Direct test error:', directError);
+        setTestResults({ error: `Proxy: ${error.message}, Direct: ${directError.message}` });
+      }
     } finally {
       setIsTesting(false);
     }
@@ -177,6 +188,9 @@ const DebugPanel = () => {
                   <div className="text-red-600">❌ Test Error: {testResults.error}</div>
                 ) : (
                   <>
+                    <div className="text-xs text-gray-500 mb-2">
+                      Method: {testResults.method || 'unknown'}
+                    </div>
                     <div className={`flex items-center space-x-2 ${testResults.project?.success ? 'text-green-600' : 'text-red-600'}`}>
                       <span>{testResults.project?.success ? '✅' : '❌'}</span>
                       <span>Project Access</span>
