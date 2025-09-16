@@ -29,33 +29,42 @@ class GCPService {
       'Content-Type': 'application/json',
     };
 
-    // For service account authentication, we'll use the API key approach
-    // In production, you'd want to implement proper OAuth2 flow
+    // For browser-based access, we need to use API key in query params
+    // Service account keys don't work directly in browsers due to CORS
     if (this.apiKey) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
+      // Don't add Authorization header for browser requests
+      // We'll add the API key as a query parameter instead
     }
 
     return headers;
   }
 
+  // Get API key as query parameter
+  getApiKeyParam() {
+    return this.apiKey ? `key=${this.apiKey}` : '';
+  }
+
   // Check if we have proper authentication
   hasValidAuth() {
     const hasApiKey = !!this.apiKey;
-    const hasServiceAccount = !!this.serviceAccountKey;
     const hasProjectId = !!this.projectId;
     
     console.log(`🔍 GCP Auth Debug:`);
     console.log(`   - API Key: ${hasApiKey}`);
-    console.log(`   - Service Account: ${hasServiceAccount}`);
     console.log(`   - Project ID: ${hasProjectId}`);
+    console.log(`   - Note: Service account keys don't work in browsers due to CORS`);
     
-    return (hasApiKey || hasServiceAccount) && hasProjectId;
+    // For browser-based access, we only need API key + project ID
+    return hasApiKey && hasProjectId;
   }
 
   // Fetch billing account information
   async getBillingAccounts() {
     try {
-      const response = await fetch(`${this.baseUrl}/billingAccounts`, {
+      const apiKeyParam = this.getApiKeyParam();
+      const url = `${this.baseUrl}/billingAccounts${apiKeyParam ? `?${apiKeyParam}` : ''}`;
+      
+      const response = await fetch(url, {
         headers: this.getAuthHeaders(),
       });
 

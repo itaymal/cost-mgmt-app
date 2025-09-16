@@ -24,18 +24,23 @@ class GCPTestService {
       'Content-Type': 'application/json',
     };
 
-    if (this.apiKey) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
-    }
-
+    // For browser-based access, we don't use Authorization header
+    // API key goes in query parameters instead
     return headers;
+  }
+
+  getApiKeyParam() {
+    return this.apiKey ? `key=${this.apiKey}` : '';
   }
 
   // Test basic project access
   async testProjectAccess() {
     try {
       console.log('🧪 Testing project access...');
-      const response = await fetch(`https://cloudresourcemanager.googleapis.com/v1/projects/${this.projectId}`, {
+      const apiKeyParam = this.getApiKeyParam();
+      const url = `https://cloudresourcemanager.googleapis.com/v1/projects/${this.projectId}${apiKeyParam ? `?${apiKeyParam}` : ''}`;
+      
+      const response = await fetch(url, {
         headers: this.getAuthHeaders(),
       });
 
@@ -57,7 +62,10 @@ class GCPTestService {
   async testBillingAccess() {
     try {
       console.log('🧪 Testing billing access...');
-      const response = await fetch('https://cloudbilling.googleapis.com/v1/billingAccounts', {
+      const apiKeyParam = this.getApiKeyParam();
+      const url = `https://cloudbilling.googleapis.com/v1/billingAccounts${apiKeyParam ? `?${apiKeyParam}` : ''}`;
+      
+      const response = await fetch(url, {
         headers: this.getAuthHeaders(),
       });
 
@@ -79,7 +87,10 @@ class GCPTestService {
   async testComputeAccess() {
     try {
       console.log('🧪 Testing compute access...');
-      const response = await fetch(`https://compute.googleapis.com/v1/projects/${this.projectId}/zones`, {
+      const apiKeyParam = this.getApiKeyParam();
+      const url = `https://compute.googleapis.com/v1/projects/${this.projectId}/zones${apiKeyParam ? `?${apiKeyParam}` : ''}`;
+      
+      const response = await fetch(url, {
         headers: this.getAuthHeaders(),
       });
 
