@@ -122,7 +122,61 @@ app.get('/api/gcp/projects/:projectId/zones', async (req, res) => {
       });
     }
 
+    // Try the correct Compute API endpoint
     const targetUrl = `https://compute.googleapis.com/v1/projects/${projectId}/zones`;
+    console.log(`🌐 Proxying: ${req.url} → ${targetUrl}`);
+
+    const client = await auth.getClient();
+    const response = await client.request({
+      url: targetUrl,
+      method: 'GET'
+    });
+
+    console.log(`✅ Success: ${response.status}`);
+    res.json(response.data);
+
+  } catch (error) {
+    console.error('❌ Proxy error:', error.message);
+    
+    // If zones endpoint fails, try a simpler compute endpoint
+    if (error.message.includes('404') || error.message.includes('Not Found')) {
+      try {
+        console.log('🔄 Trying alternative compute endpoint...');
+        const altUrl = `https://compute.googleapis.com/v1/projects/${req.params.projectId}`;
+        const client = await auth.getClient();
+        const response = await client.request({
+          url: altUrl,
+          method: 'GET'
+        });
+        console.log(`✅ Alternative endpoint success: ${response.status}`);
+        res.json(response.data);
+        return;
+      } catch (altError) {
+        console.error('❌ Alternative endpoint also failed:', altError.message);
+      }
+    }
+    
+    res.status(500).json({ 
+      error: 'Proxy server error', 
+      details: error.message 
+    });
+  }
+});
+
+// Alternative compute endpoint - get instances instead of zones
+app.get('/api/gcp/projects/:projectId/instances', async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    
+    if (!auth) {
+      return res.status(400).json({ 
+        error: 'Service account authentication not configured',
+        hint: 'Make sure REACT_APP_GCP_SERVICE_ACCOUNT_KEY is set in your .env file'
+      });
+    }
+
+    // Try to get compute instances (aggregated across all zones)
+    const targetUrl = `https://compute.googleapis.com/v1/projects/${projectId}/aggregated/instances`;
     console.log(`🌐 Proxying: ${req.url} → ${targetUrl}`);
 
     const client = await auth.getClient();

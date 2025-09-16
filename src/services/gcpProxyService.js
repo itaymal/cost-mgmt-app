@@ -67,7 +67,7 @@ class GCPProxyService {
   // Test compute access
   async testComputeAccess() {
     try {
-      const url = `${this.proxyUrl}/api/gcp/projects/${this.projectId}/zones`;
+      const url = `${this.proxyUrl}/api/gcp/projects/${this.projectId}/instances`;
       console.log('🌐 Making request to:', url);
       
       const response = await fetch(url);
