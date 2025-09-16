@@ -7,6 +7,7 @@
 
 const express = require('express');
 const cors = require('cors');
+const { GoogleAuth } = require('google-auth-library');
 require('dotenv').config();
 
 const app = express();
@@ -15,6 +16,28 @@ const PORT = 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Initialize Google Auth
+let auth;
+try {
+  const serviceAccountKey = process.env.REACT_APP_GCP_SERVICE_ACCOUNT_KEY;
+  if (serviceAccountKey) {
+    const credentials = JSON.parse(serviceAccountKey);
+    auth = new GoogleAuth({
+      credentials: credentials,
+      scopes: [
+        'https://www.googleapis.com/auth/cloud-billing.readonly',
+        'https://www.googleapis.com/auth/cloud-platform.read-only',
+        'https://www.googleapis.com/auth/compute.readonly'
+      ]
+    });
+    console.log('✅ Service account authentication initialized');
+  } else {
+    console.log('⚠️ No service account key found, using API key fallback');
+  }
+} catch (error) {
+  console.error('❌ Failed to initialize service account auth:', error.message);
+}
 
 // Simple health check
 app.get('/health', (req, res) => {
@@ -29,28 +52,25 @@ app.get('/health', (req, res) => {
 app.get('/api/gcp/projects/:projectId', async (req, res) => {
   try {
     const { projectId } = req.params;
-    const apiKey = process.env.REACT_APP_GCP_API_KEY;
     
-    if (!apiKey || apiKey === 'your-actual-api-key') {
+    if (!auth) {
       return res.status(400).json({ 
-        error: 'GCP API key not configured properly',
-        hint: 'Make sure REACT_APP_GCP_API_KEY is set in your .env file'
+        error: 'Service account authentication not configured',
+        hint: 'Make sure REACT_APP_GCP_SERVICE_ACCOUNT_KEY is set in your .env file'
       });
     }
 
-    const targetUrl = `https://cloudresourcemanager.googleapis.com/v1/projects/${projectId}?key=${apiKey}`;
+    const targetUrl = `https://cloudresourcemanager.googleapis.com/v1/projects/${projectId}`;
     console.log(`🌐 Proxying: ${req.url} → ${targetUrl}`);
 
-    const response = await fetch(targetUrl);
-    const data = await response.json();
-    
-    if (!response.ok) {
-      console.error(`❌ GCP API Error (${response.status}):`, data);
-      return res.status(response.status).json(data);
-    }
+    const client = await auth.getClient();
+    const response = await client.request({
+      url: targetUrl,
+      method: 'GET'
+    });
 
     console.log(`✅ Success: ${response.status}`);
-    res.json(data);
+    res.json(response.data);
 
   } catch (error) {
     console.error('❌ Proxy error:', error.message);
@@ -63,28 +83,24 @@ app.get('/api/gcp/projects/:projectId', async (req, res) => {
 
 app.get('/api/gcp/billingAccounts', async (req, res) => {
   try {
-    const apiKey = process.env.REACT_APP_GCP_API_KEY;
-    
-    if (!apiKey || apiKey === 'your-actual-api-key') {
+    if (!auth) {
       return res.status(400).json({ 
-        error: 'GCP API key not configured properly',
-        hint: 'Make sure REACT_APP_GCP_API_KEY is set in your .env file'
+        error: 'Service account authentication not configured',
+        hint: 'Make sure REACT_APP_GCP_SERVICE_ACCOUNT_KEY is set in your .env file'
       });
     }
 
-    const targetUrl = `https://cloudbilling.googleapis.com/v1/billingAccounts?key=${apiKey}`;
+    const targetUrl = 'https://cloudbilling.googleapis.com/v1/billingAccounts';
     console.log(`🌐 Proxying: ${req.url} → ${targetUrl}`);
 
-    const response = await fetch(targetUrl);
-    const data = await response.json();
-    
-    if (!response.ok) {
-      console.error(`❌ GCP API Error (${response.status}):`, data);
-      return res.status(response.status).json(data);
-    }
+    const client = await auth.getClient();
+    const response = await client.request({
+      url: targetUrl,
+      method: 'GET'
+    });
 
     console.log(`✅ Success: ${response.status}`);
-    res.json(data);
+    res.json(response.data);
 
   } catch (error) {
     console.error('❌ Proxy error:', error.message);
@@ -98,28 +114,25 @@ app.get('/api/gcp/billingAccounts', async (req, res) => {
 app.get('/api/gcp/projects/:projectId/zones', async (req, res) => {
   try {
     const { projectId } = req.params;
-    const apiKey = process.env.REACT_APP_GCP_API_KEY;
     
-    if (!apiKey || apiKey === 'your-actual-api-key') {
+    if (!auth) {
       return res.status(400).json({ 
-        error: 'GCP API key not configured properly',
-        hint: 'Make sure REACT_APP_GCP_API_KEY is set in your .env file'
+        error: 'Service account authentication not configured',
+        hint: 'Make sure REACT_APP_GCP_SERVICE_ACCOUNT_KEY is set in your .env file'
       });
     }
 
-    const targetUrl = `https://compute.googleapis.com/v1/projects/${projectId}/zones?key=${apiKey}`;
+    const targetUrl = `https://compute.googleapis.com/v1/projects/${projectId}/zones`;
     console.log(`🌐 Proxying: ${req.url} → ${targetUrl}`);
 
-    const response = await fetch(targetUrl);
-    const data = await response.json();
-    
-    if (!response.ok) {
-      console.error(`❌ GCP API Error (${response.status}):`, data);
-      return res.status(response.status).json(data);
-    }
+    const client = await auth.getClient();
+    const response = await client.request({
+      url: targetUrl,
+      method: 'GET'
+    });
 
     console.log(`✅ Success: ${response.status}`);
-    res.json(data);
+    res.json(response.data);
 
   } catch (error) {
     console.error('❌ Proxy error:', error.message);
