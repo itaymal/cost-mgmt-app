@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard';
 import GCPDashboard from './components/GCPDashboard';
 import AzureDashboard from './components/AzureDashboard';
 import Analytics from './components/Analytics';
+import DebugPanel from './components/DebugPanel';
 import { Cloud, TrendingUp, DollarSign, AlertTriangle } from 'lucide-react';
 
 function App() {
@@ -80,6 +81,9 @@ function App() {
           </AnimatePresence>
         </main>
       </div>
+      
+      {/* Debug Panel - only show in development */}
+      {process.env.NODE_ENV === 'development' && <DebugPanel />}
     </div>
   );
 }

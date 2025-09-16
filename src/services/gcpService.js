@@ -6,6 +6,21 @@ class GCPService {
     this.baseUrl = process.env.REACT_APP_GCP_API_BASE_URL || 'https://cloudbilling.googleapis.com/v1';
     this.projectId = process.env.REACT_APP_GCP_PROJECT_ID;
     this.apiKey = process.env.REACT_APP_GCP_API_KEY;
+    this.serviceAccountKey = this.parseServiceAccountKey();
+  }
+
+  // Parse service account key from environment
+  parseServiceAccountKey() {
+    const keyJson = process.env.REACT_APP_GCP_SERVICE_ACCOUNT_KEY;
+    if (keyJson) {
+      try {
+        return JSON.parse(keyJson);
+      } catch (error) {
+        console.error('Error parsing service account key:', error);
+        return null;
+      }
+    }
+    return null;
   }
 
   // Get authentication headers
@@ -14,11 +29,18 @@ class GCPService {
       'Content-Type': 'application/json',
     };
 
+    // For service account authentication, we'll use the API key approach
+    // In production, you'd want to implement proper OAuth2 flow
     if (this.apiKey) {
       headers['Authorization'] = `Bearer ${this.apiKey}`;
     }
 
     return headers;
+  }
+
+  // Check if we have proper authentication
+  hasValidAuth() {
+    return !!(this.apiKey || this.serviceAccountKey);
   }
 
   // Fetch billing account information

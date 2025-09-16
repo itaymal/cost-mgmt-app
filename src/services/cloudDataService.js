@@ -40,6 +40,15 @@ class CloudDataService {
   async getCostData(provider, options) {
     const { startDate, endDate, projectId, filters = {} } = options;
     
+    // Check if we should use mock data
+    const useMockData = process.env.REACT_APP_ENABLE_MOCK_DATA === 'true' || 
+                       !this.providers[provider]?.hasValidAuth?.();
+    
+    if (useMockData) {
+      console.log(`Using mock data for ${provider} (REACT_APP_ENABLE_MOCK_DATA=${process.env.REACT_APP_ENABLE_MOCK_DATA})`);
+      return this.getMockCostData(provider);
+    }
+    
     try {
       let data;
       
@@ -58,6 +67,7 @@ class CloudDataService {
       return this.transformCostData(data, provider);
     } catch (error) {
       console.error(`Error fetching cost data for ${provider}:`, error);
+      console.log('Falling back to mock data');
       // Return mock data for development
       return this.getMockCostData(provider);
     }

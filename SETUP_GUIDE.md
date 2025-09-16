@@ -50,7 +50,9 @@ npm start
    - **Storage Viewer**
    - **Cloud SQL Viewer**
 
-#### **Step 2: Generate API Key**
+#### **Step 2: Choose Authentication Method**
+
+**Option A: API Key (Simpler)**
 1. Go to APIs & Services > Credentials
 2. Create API Key
 3. Restrict the key to these APIs:
@@ -61,12 +63,38 @@ npm start
    - Cloud SQL Admin API
    - Recommender API
 
+**Option B: Service Account JSON Key (More Secure)**
+1. Go to IAM & Admin > Service Accounts
+2. Create new service account with these roles:
+   - Billing Account Viewer
+   - Project Viewer
+   - Compute Viewer
+   - Storage Viewer
+   - Cloud SQL Viewer
+3. Create and download JSON key
+
 #### **Step 3: Configure Environment**
+
+**Quick Setup (Recommended):**
+```bash
+node setup-gcp.js
+```
+
+**Manual Setup:**
 1. Copy `env.example` to `.env`
 2. Update with your GCP details:
+
+**For API Key:**
 ```env
 REACT_APP_GCP_PROJECT_ID=your-gcp-project-id
 REACT_APP_GCP_API_KEY=your-gcp-api-key
+REACT_APP_ENABLE_MOCK_DATA=false
+```
+
+**For Service Account JSON:**
+```env
+REACT_APP_GCP_PROJECT_ID=your-gcp-project-id
+REACT_APP_GCP_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"your-project-id",...}
 REACT_APP_ENABLE_MOCK_DATA=false
 ```
 
@@ -206,17 +234,36 @@ The dashboard supports filtering by:
 
 ### **Common Issues**
 
-1. **API Key Not Working**
+1. **Still Seeing Mock Data**
+   - Check browser console for messages like "Using mock data for gcp"
+   - Verify `REACT_APP_ENABLE_MOCK_DATA=false` in your .env file
+   - Ensure your API key or service account has proper permissions
+   - Check if required GCP APIs are enabled in your project
+
+2. **API Key Not Working**
    - Verify API key has correct permissions
-   - Check if required APIs are enabled
+   - Check if required APIs are enabled:
+     - Cloud Billing API
+     - Cloud Resource Manager API
+     - Compute Engine API
+     - Cloud Storage API
+     - Cloud SQL Admin API
+     - Recommender API
    - Ensure CORS is configured properly
 
-2. **No Data Showing**
-   - Check if `REACT_APP_ENABLE_MOCK_DATA=true`
-   - Verify project ID is correct
-   - Check browser console for errors
+3. **Service Account JSON Key Issues**
+   - Make sure the entire JSON is on one line in .env
+   - Escape quotes properly: `"private_key":"-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n"`
+   - Verify the service account has the required roles
+   - Check that the JSON file is valid
 
-3. **Slow Loading**
+4. **No Data Showing**
+   - Check browser console for errors
+   - Verify project ID is correct
+   - Ensure billing is enabled for your GCP project
+   - Check if you have any resources in the project
+
+5. **Slow Loading**
    - Reduce data range in filters
    - Check network connectivity
    - Verify API rate limits
